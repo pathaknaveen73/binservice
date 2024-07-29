@@ -1,0 +1,63 @@
+# define the build steps
+steps:
+  # install the app dependencies
+  - name: 'gcr.io/cloud-builders/npm'
+    args: ['install']
+
+  - name: 'gcr.io/cloud-builders/npm'
+    args: ['run', 'create-env']
+    env:
+    - 'DB_CONNECT_CW_SCRAPING_DB=${_DB_CONNECT_CW_SCRAPING_DB}'
+    - 'DB_CONNECT=${_DB_CONNECT}'
+    - 'DB_CONNECT_CW_ANALYTICS=${_DB_CONNECT_CW_ANALYTICS}'
+#    - 'DB_CONNECT_CW_SCRAPING_DB=${_SECRET_KEY_CW_SCRAPING_DB}'
+
+#  - name: 'gcr.io/cloud-builders/gcloud'
+#    entrypoint: 'bash'
+#    args:
+#      - -c
+#      - |
+#        export MY_SECRET=$(gcloud secrets versions access latest --secret="CARTWIRE_BIN_PROD_DATABASE" --project="cartwire-380103")
+
+#  - name: 'gcr.io/cloud-builders/gcloud'
+#    entrypoint: 'bash'
+#    args:
+#      - -c
+#      - |
+#        kubectl set env deployment my-deployment MY_ENV_VAR=$(gcloud secrets versions access latest --secret="CARTWIRE_BIN_PROD_DATABASE" --project="cartwire-380103")
+
+#  - name: 'bash'
+#    script: |
+#      #!/usr/bin/env bash
+#      export SECRET_VALUE=$(gcloud secrets versions access latest --secret="CARTWIRE_BIN_PROD_DATABASE" --project="cartwire-380103")
+
+#  - name: 'bash'
+#    args: ['echo', 'gcloud secrets versions access latest --secret="CARTWIRE_BIN_PROD_DATABASE" --project="cartwire-380103"']
+
+  # execute the tests
+#  - name: 'gcr.io/cloud-builders/npm'
+#    args: ['run', 'test'] 
+
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args: ['bash.sh','--foo']
+    
+  # build an artifact using the docker builder
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/cartwire-380103/github_devashish-s_cartwire-bin:latest', '.']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/cartwire-380103/github_devashish-s_cartwire-bin']
+
+# deploy container image to GKE
+  - name: 'gcr.io/cloud-builders/gke-deploy'
+    args:
+    - run
+    - --filename=./k8s/
+    - --image=gcr.io/cartwire-380103/github_devashish-s_cartwire-bin
+    - --location=us-central1-c
+    - --cluster=cartwire-bin-cluster
+  
+images:
+  - 'gcr.io/cartwire-380103/github_devashish-s_cartwire-bin:latest'
+timeout: 1200s
